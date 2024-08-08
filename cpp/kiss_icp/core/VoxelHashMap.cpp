@@ -35,9 +35,14 @@ using kiss_icp::Voxel;
 std::vector<Voxel> GetAdjacentVoxels(const Eigen::Vector3d &point,
                                      const kiss_icp::VoxelHashMap &voxel_map,
                                      const int adjacent_voxels = 1) {
-    const auto &voxel = kiss_icp::PointToVoxel(point, voxel_map.voxel_size_);
+    const double &voxel_size = voxel_map.voxel_size_;
+    const auto &voxel = kiss_icp::PointToVoxel(point, voxel_size);
+    const Voxel offset = [&]() {
+        const auto centered_voxel = (point / voxel_size).array() - voxel_size * 0.5;
+        return (centered_voxel / centered_voxel.abs()).cast<int>().matrix();
+    }();
     std::vector<Voxel> voxel_neighborhood;
-    for (int i = voxel.x() - adjacent_voxels; i < voxel.x() + adjacent_voxels + 1; ++i) {
+    for (int i = voxel.x(); i < voxel.x() + offset.x(); ++i) {
         for (int j = voxel.y() - adjacent_voxels; j < voxel.y() + adjacent_voxels + 1; ++j) {
             for (int k = voxel.z() - adjacent_voxels; k < voxel.z() + adjacent_voxels + 1; ++k) {
                 if (voxel_map.map_.contains({i, j, k})) {
