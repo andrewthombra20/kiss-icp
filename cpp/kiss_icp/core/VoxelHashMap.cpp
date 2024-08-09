@@ -31,10 +31,10 @@
 
 namespace {
 using CoordinatesArray = std::array<int, 2>;
-int getOctant(const double &point_coordinate_in_voxel, const double voxel_size) {
-    if (point_coordinate_in_voxel < 0.5 * voxel_size) {
+int getOctant(const double &point_coordinate_in_voxel) {
+    if (point_coordinate_in_voxel < 0.25) {
         return -1;
-    } else if (point_coordinate_in_voxel > 1.5 * voxel_size) {
+    } else if (point_coordinate_in_voxel > 0.75) {
         return 1;
     }
     return 0;
@@ -43,13 +43,11 @@ std::vector<kiss_icp::Voxel> GetAdjacentVoxels(const Eigen::Vector3d &point,
                                                const kiss_icp::VoxelHashMap &grid) {
     // Convert the point to voxel coordinates
     const auto &voxel = kiss_icp::PointToVoxel(point, grid.voxel_size_);
-    const Eigen::Vector3d point_coordinate_in_voxel = point - voxel.cast<double>();
-    CoordinatesArray x(
-        {voxel.x(), voxel.x() + getOctant(point_coordinate_in_voxel.x(), grid.voxel_size_)});
-    CoordinatesArray y(
-        {voxel.y(), voxel.y() + getOctant(point_coordinate_in_voxel.y(), grid.voxel_size_)});
-    CoordinatesArray z(
-        {voxel.z(), voxel.z() + getOctant(point_coordinate_in_voxel.z(), grid.voxel_size_)});
+    const Eigen::Vector3d point_coordinate_in_voxel =
+        (point / grid.voxel_size_) - voxel.cast<double>();
+    CoordinatesArray x({voxel.x(), voxel.x() + getOctant(point_coordinate_in_voxel.x())});
+    CoordinatesArray y({voxel.y(), voxel.y() + getOctant(point_coordinate_in_voxel.y())});
+    CoordinatesArray z({voxel.z(), voxel.z() + getOctant(point_coordinate_in_voxel.z())});
     std::vector<kiss_icp::Voxel> voxel_neighborhood;
     for (const auto &i : x) {
         for (const auto &j : y) {
